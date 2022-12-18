@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="member">
+
+	<sql id="search">
+		<choose>
+			<when test="searchGubun == 'id_name_phone' and searchGubun != null and searchGubun != ''">
+				and (id like '%' || #{searchData} || '%' or name like '%' || #{searchData} || '%' or phone like '%' || #{searchData} || '%')
+			</when>
+			<when test="searchGubun != null and searchGubun != '' and searchData != null and searchData != ''">
+				and (${searchGubun} like '%' || #{searchData} || '%')
+			</when>
+			<otherwise >
+			</otherwise>
+		</choose>
+	</sql>
+
+	<select id="getSelectAll" resultType="com.cpy.springPortfolio.member.model.dto.MemberDTO">
+		select * from (select A.*, Rownum Rnum from (
+				select * from member where 1=1
+				<include refid="search"></include>
+		<![CDATA[
+				order by no desc
+			) A) where Rnum >= #{startRecord} and Rnum <= #{lastRecord}
+		]]>
+	</select>
+	
+	<select id="getSelectOne" resultType="com.cpy.springPortfolio.member.model.dto.MemberDTO">
+		select * from (select b.*, 
+						LAG(no) over (order by no desc) preNo, 
+						LAG(id) over (order by no desc) preId, 
+						LEAD(no) over (order by no desc) nxtNo, 
+						LEAD(id) over (order by no desc) nxtId 
+						from member b order by no desc
+						) where no = #{no} 
+	</select>
+	
+	<insert id="setInsert">
+		insert into member values (seq_member.nextval, #{id}, #{passwd}, #{name}, #{phone}, #{email}, #{jumin}, #{juso1}, #{juso2}, #{juso3}, #{juso4}, #{grade}, sysdate )
+	</insert>
+	
+	<update id="setUpdate">
+		update member set 
+		phone = #{phone}, email = #{email}, juso1 = #{juso1}, juso2 = #{juso2}, juso3 = #{juso3}, juso4 = #{juso4}, grade = #{grade}
+		where no = #{no} and passwd = #{passwd}
+	</update>
+	
+	<delete id="setDelete">
+		delete from member where no = #{no } and passwd = #{passwd}
+	</delete>
+	
+	<select id="getLogin" resultType="com.cpy.springPortfolio.member.model.dto.MemberDTO">
+	
+		select no, id, name from member where id = #{id} and passwd = #{passwd}
+		
+	</select>
+	
+	<select id="getAdminLogin" resultType="com.cpy.springPortfolio.admin.model.dto.AdminDTO">
+	
+		select no, id, name from admin where id = #{id} and passwd = #{passwd}
+		
+	</select>
+	
+	<select id="getTotalRecord" resultType="int">
+		select count(*) counter from member where 1=1
+		<include refid="search"></include>
+		<!-- <choose>
+			<when test="searchGubun == 'id' "> and id like #{searchData} </when>
+			<when test="searchGubun == 'name' "> and name like #{searchData} </when>
+			<when test="searchGubun == 'phone' "> and phone like #{searchData} </when>
+			<when test="searchGubun == 'id_name_phone' "> and (id like #{searchData} or name like #{searchData} or phone like #{searchData}) </when>
+		</choose> -->
+	</select>
+	
+</mapper>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="guestBook">
+
+	<sql id="search">
+		<choose>
+			<when test="searchGubun == 'name_content' and searchGubun != null and searchGubun != ''">
+				and (name like '%' || #{searchData} || '%' or content like '%' || #{searchData} || '%')
+			</when>
+			<when test="searchGubun != null and searchGubun != '' and searchData != null and searchData != ''">
+				and (${searchGubun} like '%' || #{searchData} || '%')
+			</when>
+			<otherwise >
+			</otherwise>
+		</choose>
+	</sql>
+
+	<select id="getSelectAll" resultType="com.cpy.springPortfolio.guestBook.model.dto.GuestBookDTO">
+		select * from (select A.*, Rownum Rnum from (
+				select * from guestBook where 1=1
+				<include refid="search"></include>
+		<![CDATA[
+				order by no desc
+			) A) where Rnum >= #{startRecord} and Rnum <= #{lastRecord}
+		]]>
+	</select>
+	
+	<select id="getSelectOne" resultType="com.cpy.springPortfolio.guestBook.model.dto.GuestBookDTO">
+		select * from (select b.*, 
+						LAG(no) over (order by no desc) preNo, 
+						LAG(name) over (order by no desc) preName, 
+						LEAD(no) over (order by no desc) nxtNo, 
+						LEAD(name) over (order by no desc) nxtName 
+						from guestBook b order by no desc
+						) where no = #{no} 
+	</select>
+	
+	<insert id="setInsert">
+		insert into guestBook values (seq_guestBook.nextval, #{name}, #{email}, #{content}, #{passwd}, sysdate)
+	</insert>
+	
+	<update id="setUpdate">
+		update guestBook set 
+		name = #{name}, email = #{email}, content = #{content}
+		where no = #{no} and passwd = #{passwd}
+	</update>
+	
+	<delete id="setDelete">
+		delete from guestBook where no = #{no } and passwd = #{passwd}
+	</delete>
+	
+	<select id="getTotalRecord" resultType="int">
+		select count(*) counter from guestBook where 1=1
+		<include refid="search"></include>
+	</select>
+	
+</mapper>

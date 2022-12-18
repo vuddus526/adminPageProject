@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cart">
+
+	<sql id="search">
+		<choose>
+			<when test="searchGubun == 'productName_productPrice_productDescription' and searchGubun != null and searchGubun != ''">
+				and (productName like '%' || #{searchData} || '%' or productPrice like '%' || #{searchData} || '%' or productDescription like '%' || #{searchData} || '%')
+			</when>
+			<when test="searchGubun != null and searchGubun != '' and searchData != null and searchData != ''">
+				and (${searchGubun} like '%' || #{searchData} || '%')
+			</when>
+			<otherwise >
+			</otherwise>
+		</choose>
+	</sql>
+
+	<select id="getSelectAll" resultType="com.cpy.springPortfolio.cart.model.dto.CartDTO">
+		select c.cartNo cartNo, c.productNo productNo, c.amount amount, c.memberNo memberNo, c.regiDate regiDate,
+			 p.productName productName, p.productPrice productPrice, p.vendor vendor, p.attachInfo attachInfo 
+			 from cart c, product p where c.productNo = p.productNo 
+			 
+			
+			 <choose>
+				<when test="memberNo == '999'">
+					 
+				</when>
+				<otherwise >
+					and memberNo = #{memberNo} 
+				</otherwise>
+			</choose>
+		
+			 order by c.cartNo desc
+	</select>
+	
+	<select id="getCartAll" resultType="com.cpy.springPortfolio.cart.model.dto.CartDTO">
+		select p.productNo productNo, p.productName productName, nvl(sum(c.amount), 0) amount, 
+		(select sum(amount) from cart) amountAll 
+		from cart c right outer join product p on c.productNo = p.productNo 
+		group by p.productNo, p.productName 
+	</select>
+	
+	<select id="getSelectOne" resultType="com.cpy.springPortfolio.cart.model.dto.CartDTO">
+		select c.*, p.productName productName, p.productPrice productPrice, p.vendor vendor, p.attachInfo attachInfo 
+		from cart c, product p 
+		where c.productCode = p.productCode and memberNo = #{memberNo} and cartNo = #{cartNo}
+	</select>
+	
+	<insert id="setInsert">
+		insert into cart values (seq_cart.nextval, #{productNo}, #{amount}, #{memberNo}, sysdate )
+	</insert>
+	
+	<update id="setUpdate">
+		update cart set 
+		amount = #{amount}
+		where cartNo = #{cartNo} and memberNo = #{memberNo}
+	</update>
+	
+	<delete id="setDelete">
+		delete from cart where cartNo = #{cartNo} and memberNo = #{memberNo}
+	</delete>
+	
+	<select id="getTotalRecord" resultType="int">
+		select count(*) counter from cart 
+		
+		<choose>
+				<when test="memberNo == '999'">
+					 
+				</when>
+				<otherwise >
+					where memberNo = #{memberNo}
+				</otherwise>
+			</choose>
+		
+	</select>
+	
+</mapper>

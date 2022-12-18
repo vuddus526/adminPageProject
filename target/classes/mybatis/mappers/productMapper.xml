@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="product">
+
+	<sql id="search">
+		<choose>
+			<when test="searchGubun == 'productName_productPrice_productDescription' and searchGubun != null and searchGubun != ''">
+				and (productName like '%' || #{searchData} || '%' or productPrice like '%' || #{searchData} || '%' or productDescription like '%' || #{searchData} || '%')
+			</when>
+			<when test="searchGubun != null and searchGubun != '' and searchData != null and searchData != ''">
+				and (${searchGubun} like '%' || #{searchData} || '%')
+			</when>
+			<otherwise >
+			</otherwise>
+		</choose>
+	</sql>
+
+	<select id="getSelectAll" resultType="com.cpy.springPortfolio.product.model.dto.ProductDTO">
+		select * from (select A.*, Rownum Rnum from (
+				select * from product where 1=1
+				<include refid="search"></include>
+		<![CDATA[
+				order by productNo desc
+			) A) where Rnum >= #{startRecord} and Rnum <= #{lastRecord}
+		]]>
+	</select>
+	
+	<select id="getSelectOne" resultType="com.cpy.springPortfolio.product.model.dto.ProductDTO">
+		select * from (select b.*, 
+						LAG(productNo) over (order by productNo desc) preProductNo, 
+						LAG(productName) over (order by productNo desc) preProductName, 
+						LEAD(productNo) over (order by productNo desc) nxtProductNo, 
+						LEAD(productName) over (order by productNo desc) nxtProductName 
+						from product b order by productNo desc
+						) where productNo = #{productNo} 
+	</select>
+	
+	<insert id="setInsert">
+		insert into product values (seq_product.nextval, #{productName}, #{vendor}, #{productPrice}, #{productDescription}, #{attachInfo}, sysdate )
+	</insert>
+	
+	<update id="setUpdate">
+		update product set 
+		productName = #{productName}, vendor = #{vendor}, productPrice = #{productPrice}, productDescription = #{productDescription}, attachInfo = #{attachInfo}
+		where productNo = #{productNo}
+	</update>
+	
+	<delete id="setDelete">
+		delete from product where productNo = #{productNo }
+	</delete>
+	
+	<select id="getTotalRecord" resultType="int">
+		select count(*) counter from product where 1=1
+		<include refid="search"></include>
+	</select>
+	
+</mapper>
